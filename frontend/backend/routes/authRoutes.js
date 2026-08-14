@@ -1,9 +1,11 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 const router = express.Router();
 
+// REGISTER
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -14,7 +16,21 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const cleanEmail = email.trim().toLowerCase();
+
+    const allowedRoles = ["student", "faculty", "admin"];
+
+    const userRole = role || "student";
+
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(400).json({
+        message: "Invalid role",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      email: cleanEmail,
+    });
 
     if (existingUser) {
       return res.status(400).json({
@@ -25,10 +41,10 @@ router.post("/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: cleanEmail,
       password: hashedPassword,
-      role: role || "student",
+      role: userRole,
     });
 
     res.status(201).json({
@@ -41,15 +57,15 @@ router.post("/register", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Registration error:", error);
 
     res.status(500).json({
       message: "Server error",
     });
   }
 });
-const jwt = require("jsonwebtoken");
 
+// LOGIN
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -60,22 +76,29 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email });
+    const cleanEmail = email.trim().toLowerCase();
 
-console.log("Login email:", email);
-console.log("User found:", user ? "YES" : "NO");
+    const user = await User.findOne({
+      email: cleanEmail,
+    });
 
-if (!user) {
-  return res.status(401).json({
-    message: "Invalid email or password",
-  });
-}
+    console.log("Login email:", cleanEmail);
+    console.log("User found:", user ? "YES" : "NO");
+
+    if (!user) {
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
+    }
 
     const passwordMatch = await bcrypt.compare(
       password,
       user.password
     );
-console.log("Password match:", passwordMatch);
+
+    console.log("Password match:", passwordMatch);
+    console.log("User role:", user.role);
+
     if (!passwordMatch) {
       return res.status(401).json({
         message: "Invalid email or password",
@@ -104,11 +127,12 @@ console.log("Password match:", passwordMatch);
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Login error:", error);
 
     res.status(500).json({
       message: "Server error",
     });
   }
 });
+
 module.exports = router;

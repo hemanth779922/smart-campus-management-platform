@@ -22,16 +22,16 @@ function Login() {
     console.log("Login data:", loginData);
 
     try {
-   const response = await fetch(
-  "https://obscure-space-enigma-q76pp7r69649f9qw4-5000.app.github.dev/api/auth/login",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(loginData),
-  }
-);
+      const response = await fetch(
+        "https://obscure-space-enigma-q76pp7r69649f9qw4-5000.app.github.dev/api/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(loginData),
+        }
+      );
 
       const data = await response.json();
 
@@ -47,7 +47,12 @@ function Login() {
 
       alert("Login successful!");
 
-      navigate("/dashboard");
+      // Redirect based on user role
+      if (data.user.role === "faculty") {
+        navigate("/faculty-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
 
     } catch (error) {
       console.error("Login error:", error);

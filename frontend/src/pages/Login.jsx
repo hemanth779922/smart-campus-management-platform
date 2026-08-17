@@ -6,6 +6,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Login() {
   const navigate = useNavigate();
 
@@ -15,22 +17,12 @@ function Login() {
     const form = e.target;
 
     const registrationNumber =
-      form.registrationNumber.value
-        .trim()
-        .toUpperCase();
+      form.registrationNumber.value.trim().toUpperCase();
 
-    const password =
-      form.password.value;
+    const password = form.password.value;
 
-    // Validate fields
-    if (
-      !registrationNumber ||
-      !password
-    ) {
-      alert(
-        "Registration number and password are required"
-      );
-
+    if (!registrationNumber || !password) {
+      alert("Registration number and password are required");
       return;
     }
 
@@ -46,7 +38,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        "https://obscure-space-enigma-q76pp7r69649f9qw4-5000.app.github.dev/api/auth/login",
+        `${API_URL}/api/auth/login`,
         {
           method: "POST",
 
@@ -60,10 +52,7 @@ function Login() {
 
       const data = await response.json();
 
-      console.log(
-        "Login response:",
-        data
-      );
+      console.log("Login response:", data);
 
       if (!response.ok) {
         alert(
@@ -74,47 +63,27 @@ function Login() {
         return;
       }
 
-      // ==========================================
-      // SAVE LOGIN INFORMATION
-      // ==========================================
-
-      localStorage.setItem(
-        "token",
-        data.token
-      );
+      // Save login information
+      localStorage.setItem("token", data.token);
 
       localStorage.setItem(
         "user",
         JSON.stringify(data.user)
       );
 
-      alert(
-        "Login successful!"
-      );
+      alert("Login successful!");
 
-      // ==========================================
-      // REDIRECT BASED ON ROLE
-      // ==========================================
-
-      if (
-        data.user.role === "faculty"
-      ) {
-        navigate(
-          "/faculty-dashboard"
-        );
+      // Redirect based on role
+      if (data.user.role === "faculty") {
+        navigate("/faculty-dashboard");
       } else {
         navigate("/dashboard");
       }
 
     } catch (error) {
-      console.error(
-        "Login error:",
-        error
-      );
+      console.error("Login error:", error);
 
-      alert(
-        "Unable to connect to server"
-      );
+      alert("Unable to connect to server");
     }
   };
 
@@ -160,9 +129,7 @@ function Login() {
             className="space-y-5"
           >
 
-            {/* ==============================
-                REGISTRATION NUMBER
-            ============================== */}
+            {/* Registration Number */}
 
             <div>
 
@@ -190,9 +157,7 @@ function Login() {
 
             </div>
 
-            {/* ==============================
-                PASSWORD
-            ============================== */}
+            {/* Password */}
 
             <div>
 
@@ -220,9 +185,7 @@ function Login() {
 
             </div>
 
-            {/* ==============================
-                LOGIN BUTTON
-            ============================== */}
+            {/* Login Button */}
 
             <button
               type="submit"

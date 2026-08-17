@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Register() {
   const navigate = useNavigate();
 
@@ -21,7 +23,10 @@ function Register() {
     const form = e.target;
 
     const name = form.name.value.trim();
-    const email = form.email.value.trim().toLowerCase();
+
+    const email = form.email.value
+      .trim()
+      .toLowerCase();
 
     const registrationNumber =
       form.registrationNumber.value
@@ -46,6 +51,7 @@ function Register() {
       alert(
         "Password must be at least 6 characters long"
       );
+
       return;
     }
 
@@ -53,7 +59,7 @@ function Register() {
 
     try {
       const response = await fetch(
-        "https://obscure-space-enigma-q76pp7r69649f9qw4-5000.app.github.dev/api/auth/register",
+        `${API_URL}/api/auth/register`,
         {
           method: "POST",
 
@@ -92,6 +98,7 @@ function Register() {
       );
 
       navigate("/login");
+
     } catch (error) {
       console.error(
         "Registration error:",
@@ -101,6 +108,7 @@ function Register() {
       alert(
         "Unable to connect to server"
       );
+
     } finally {
       setLoading(false);
     }
@@ -148,9 +156,7 @@ function Register() {
             className="space-y-5"
           >
 
-            {/* ==============================
-                NAME
-            ============================== */}
+            {/* Name */}
 
             <div>
 
@@ -178,9 +184,7 @@ function Register() {
 
             </div>
 
-            {/* ==============================
-                EMAIL
-            ============================== */}
+            {/* Email */}
 
             <div>
 
@@ -208,9 +212,7 @@ function Register() {
 
             </div>
 
-            {/* ==============================
-                REGISTRATION NUMBER
-            ============================== */}
+            {/* Registration Number */}
 
             <div>
 
@@ -242,9 +244,7 @@ function Register() {
 
             </div>
 
-            {/* ==============================
-                PASSWORD
-            ============================== */}
+            {/* Password */}
 
             <div>
 
@@ -277,9 +277,7 @@ function Register() {
 
             </div>
 
-            {/* ==============================
-                ROLE
-            ============================== */}
+            {/* Role */}
 
             <div>
 
@@ -294,6 +292,7 @@ function Register() {
                 }
                 className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none focus:border-violet-500"
               >
+
                 <option value="student">
                   Student
                 </option>
@@ -301,13 +300,12 @@ function Register() {
                 <option value="faculty">
                   Faculty
                 </option>
+
               </select>
 
             </div>
 
-            {/* ==============================
-                REGISTER BUTTON
-            ============================== */}
+            {/* Register Button */}
 
             <button
               type="submit"

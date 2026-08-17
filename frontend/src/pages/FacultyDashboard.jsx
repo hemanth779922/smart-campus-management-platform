@@ -12,8 +12,7 @@ import {
   Plus,
 } from "lucide-react";
 
-const API_URL =
-  "https://obscure-space-enigma-q76pp7r69649f9qw4-5000.app.github.dev";
+const API_URL = import.meta.env.VITE_API_URL;
 
 
 const getAuthHeaders = () => {

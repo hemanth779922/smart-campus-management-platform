@@ -16,6 +16,14 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    registrationNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      uppercase: true,
+      trim: true,
+    },
+
     password: {
       type: String,
       required: true,
@@ -23,7 +31,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["student", "faculty", "admin"],
+      enum: ["student", "faculty"],
       default: "student",
     },
   },
@@ -32,4 +40,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model(
+  "User",
+  userSchema
+);

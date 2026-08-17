@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 const user = JSON.parse(localStorage.getItem("user"));
+const token = localStorage.getItem("token");
 
 const API_URL =
   "https://obscure-space-enigma-q76pp7r69649f9qw4-5000.app.github.dev";
@@ -64,7 +65,8 @@ function StudentDashboard() {
   const [lostFoundItems, setLostFoundItems] = useState([]);
 
   const [complaintTitle, setComplaintTitle] = useState("");
-  const [complaintDescription, setComplaintDescription] = useState("");
+  const [complaintDescription, setComplaintDescription] =
+    useState("");
   const [complaintCategory, setComplaintCategory] =
     useState("General");
 
@@ -75,51 +77,118 @@ function StudentDashboard() {
   const [lostFoundLocation, setLostFoundLocation] = useState("");
   const [lostFoundDate, setLostFoundDate] = useState("");
 
-  const fetchComplaints = () => {
-    fetch(`${API_URL}/api/complaints`)
-      .then((response) => response.json())
-      .then((data) => {
-        const studentComplaints = data.filter(
-          (complaint) =>
-            complaint.studentId?._id === user?.id
-        );
+  // ==========================================
+  // FETCH ONLY THIS STUDENT'S COMPLAINTS
+  // ==========================================
 
-        setComplaints(studentComplaints);
+  const fetchComplaints = () => {
+    if (!user?.id) {
+      setComplaints([]);
+      return;
+    }
+
+    fetch(
+      `${API_URL}/api/complaints/student/${user.id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            "Failed to fetch complaints"
+          );
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        setComplaints(
+          Array.isArray(data) ? data : []
+        );
       })
       .catch((error) => {
         console.error(
-          "Error fetching complaints:",
+          "Error fetching student complaints:",
           error
         );
+
+        setComplaints([]);
       });
   };
+
+  // ==========================================
+  // FETCH ONLY THIS STUDENT'S LOST & FOUND
+  // ==========================================
 
   const fetchLostFoundItems = () => {
-    fetch(`${API_URL}/api/lost-found`)
-      .then((response) => response.json())
+    if (!user?.id) {
+      setLostFoundItems([]);
+      return;
+    }
+
+    fetch(
+      `${API_URL}/api/lost-found/student/${user.id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            "Failed to fetch lost and found items"
+          );
+        }
+
+        return response.json();
+      })
       .then((data) => {
-        setLostFoundItems(data);
+        setLostFoundItems(
+          Array.isArray(data) ? data : []
+        );
       })
       .catch((error) => {
         console.error(
-          "Error fetching lost and found:",
+          "Error fetching student lost and found:",
           error
         );
+
+        setLostFoundItems([]);
       });
   };
+
+  // ==========================================
+  // FETCH DASHBOARD DATA
+  // ==========================================
 
   useEffect(() => {
     // EVENTS
     fetch(`${API_URL}/api/events`)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            "Failed to fetch events"
+          );
+        }
+
+        return response.json();
+      })
       .then((data) => {
-        setEvents(data);
+        setEvents(
+          Array.isArray(data) ? data : []
+        );
       })
       .catch((error) => {
         console.error(
           "Error fetching events:",
           error
         );
+
+        setEvents([]);
       });
 
     // COMPLAINTS
@@ -127,23 +196,46 @@ function StudentDashboard() {
 
     // ANNOUNCEMENTS
     fetch(`${API_URL}/api/announcements`)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            "Failed to fetch announcements"
+          );
+        }
+
+        return response.json();
+      })
       .then((data) => {
-        setAnnouncements(data);
+        setAnnouncements(
+          Array.isArray(data) ? data : []
+        );
       })
       .catch((error) => {
         console.error(
           "Error fetching announcements:",
           error
         );
+
+        setAnnouncements([]);
       });
 
     // LOST & FOUND
     fetchLostFoundItems();
   }, []);
 
+  // ==========================================
+  // SUBMIT COMPLAINT
+  // ==========================================
+
   const handleComplaintSubmit = async (e) => {
     e.preventDefault();
+
+    if (!user?.id) {
+      alert(
+        "Student information not found. Please login again."
+      );
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -152,9 +244,10 @@ function StudentDashboard() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            studentId: user?.id,
+            studentId: user.id,
             title: complaintTitle,
             description: complaintDescription,
             category: complaintCategory,
@@ -165,7 +258,9 @@ function StudentDashboard() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Complaint submitted successfully!");
+        alert(
+          "Complaint submitted successfully!"
+        );
 
         setComplaintTitle("");
         setComplaintDescription("");
@@ -179,13 +274,30 @@ function StudentDashboard() {
         );
       }
     } catch (error) {
-      console.error("Complaint error:", error);
-      alert("Unable to connect to server");
+      console.error(
+        "Complaint error:",
+        error
+      );
+
+      alert(
+        "Unable to connect to server"
+      );
     }
   };
 
+  // ==========================================
+  // SUBMIT LOST & FOUND
+  // ==========================================
+
   const handleLostFoundSubmit = async (e) => {
     e.preventDefault();
+
+    if (!user?.id) {
+      alert(
+        "Student information not found. Please login again."
+      );
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -194,9 +306,10 @@ function StudentDashboard() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            studentId: user?.id,
+            studentId: user.id,
             type: lostFoundType,
             itemName: lostFoundItemName,
             description: lostFoundDescription,
@@ -212,9 +325,7 @@ function StudentDashboard() {
 
       if (response.ok) {
         alert(
-          `${
-            lostFoundType
-          } item reported successfully!`
+          `${lostFoundType} item reported successfully!`
         );
 
         setLostFoundType("Lost");
@@ -236,13 +347,20 @@ function StudentDashboard() {
         error
       );
 
-      alert("Unable to connect to server");
+      alert(
+        "Unable to connect to server"
+      );
     }
   };
+
+  // ==========================================
+  // LOGOUT
+  // ==========================================
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     navigate("/login");
   };
 
@@ -351,7 +469,7 @@ function StudentDashboard() {
               Student Dashboard
             </p>
 
-            <h1>
+            <h1 className="mt-1 text-2xl font-bold">
               Welcome back, {user?.name} 👋
             </h1>
 
@@ -912,19 +1030,18 @@ function StudentDashboard() {
 
             </form>
 
-            {/* ITEMS */}
+            {/* MY ITEMS */}
 
             <div className="mt-8">
 
               <div className="mb-4">
 
                 <h3 className="text-lg font-semibold">
-                  Reported Items
+                  My Reported Items
                 </h3>
 
                 <p className="text-sm text-slate-500">
-                  Recently reported lost and found
-                  items
+                  Your reported lost and found items
                 </p>
 
               </div>
@@ -934,8 +1051,8 @@ function StudentDashboard() {
                 {lostFoundItems.length === 0 ? (
 
                   <p className="text-sm text-slate-500">
-                    No lost or found items reported
-                    yet.
+                    You have not reported any
+                    lost or found items yet.
                   </p>
 
                 ) : (
@@ -976,12 +1093,6 @@ function StudentDashboard() {
                           <p className="mt-2 text-sm text-slate-500">
                             Location:{" "}
                             {item.location}
-                          </p>
-
-                          <p className="mt-1 text-xs text-slate-600">
-                            Reported by:{" "}
-                            {item.studentId?.name ||
-                              "Unknown"}
                           </p>
 
                           <p className="mt-1 text-xs text-slate-600">

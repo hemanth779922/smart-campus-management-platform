@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
   LayoutDashboard,
   MessageSquareWarning,
@@ -16,51 +15,98 @@ import {
 const API_URL =
   "https://obscure-space-enigma-q76pp7r69649f9qw4-5000.app.github.dev";
 
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+
+  return token
+    ? {
+        Authorization: `Bearer ${token}`,
+      }
+    : {};
+};
+
 function FacultyDashboard() {
   const navigate = useNavigate();
 
   const [complaints, setComplaints] = useState([]);
   const [lostFoundItems, setLostFoundItems] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
 
-  // Event states
   const [eventTitle, setEventTitle] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
   const [eventLocation, setEventLocation] = useState("");
   const [eventDescription, setEventDescription] = useState("");
 
-  // Announcement states
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementMessage, setAnnouncementMessage] = useState("");
   const [announcementDate, setAnnouncementDate] = useState("");
   const [announcementCategory, setAnnouncementCategory] =
     useState("General");
 
-  // Fetch complaints and lost & found
-  useEffect(() => {
-    fetch(`${API_URL}/api/complaints`)
-      .then((response) => response.json())
-      .then((data) => {
-        setComplaints(data);
-      })
-      .catch((error) => {
-        console.error("Error fetching complaints:", error);
-      });
+  // =========================
+  // FETCH ALL DATA
+  // =========================
+  const fetchData = async () => {
+    try {
+      const [
+        complaintsResponse,
+        lostFoundResponse,
+        eventsResponse,
+        announcementsResponse,
+      ] = await Promise.all([
+        fetch(`${API_URL}/api/complaints`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/api/lost-found`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/api/events`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/api/announcements`, { headers: getAuthHeaders() }),
+      ]);
 
-    fetch(`${API_URL}/api/lost-found`)
-      .then((response) => response.json())
-      .then((data) => {
-        setLostFoundItems(data);
-      })
-      .catch((error) => {
-        console.error(
-          "Error fetching lost and found:",
-          error
-        );
-      });
+      const complaintsData = await complaintsResponse.json();
+      const lostFoundData = await lostFoundResponse.json();
+      const eventsData = await eventsResponse.json();
+      const announcementsData =
+        await announcementsResponse.json();
+
+      setComplaints(
+        Array.isArray(complaintsData)
+          ? complaintsData
+          : []
+      );
+
+      setLostFoundItems(
+        Array.isArray(lostFoundData)
+          ? lostFoundData
+          : []
+      );
+
+      setEvents(
+        Array.isArray(eventsData)
+          ? eventsData
+          : []
+      );
+
+      setAnnouncements(
+        Array.isArray(announcementsData)
+          ? announcementsData
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "Error fetching dashboard data:",
+        error
+      );
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
-  // Update complaint status
+  // =========================
+  // UPDATE COMPLAINT
+  // =========================
   const updateStatus = async (id, status) => {
     try {
       const response = await fetch(
@@ -69,6 +115,7 @@ function FacultyDashboard() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
           },
           body: JSON.stringify({ status }),
         }
@@ -99,7 +146,9 @@ function FacultyDashboard() {
     }
   };
 
-  // Update Lost & Found status
+  // =========================
+  // UPDATE LOST & FOUND
+  // =========================
   const updateLostFoundStatus = async (
     id,
     status
@@ -111,6 +160,7 @@ function FacultyDashboard() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
           },
           body: JSON.stringify({ status }),
         }
@@ -142,7 +192,9 @@ function FacultyDashboard() {
     }
   };
 
-  // Create event
+  // =========================
+  // CREATE EVENT
+  // =========================
   const handleEventSubmit = async (e) => {
     e.preventDefault();
 
@@ -153,6 +205,7 @@ function FacultyDashboard() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
           },
           body: JSON.stringify({
             title: eventTitle,
@@ -168,6 +221,11 @@ function FacultyDashboard() {
 
       if (response.ok) {
         alert("Event created successfully!");
+
+        setEvents((current) => [
+          data,
+          ...current,
+        ]);
 
         setEventTitle("");
         setEventDate("");
@@ -190,8 +248,12 @@ function FacultyDashboard() {
     }
   };
 
-  // Create announcement
-  const handleAnnouncementSubmit = async (e) => {
+  // =========================
+  // CREATE ANNOUNCEMENT
+  // =========================
+  const handleAnnouncementSubmit = async (
+    e
+  ) => {
     e.preventDefault();
 
     try {
@@ -201,6 +263,7 @@ function FacultyDashboard() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
           },
           body: JSON.stringify({
             title: announcementTitle,
@@ -219,6 +282,11 @@ function FacultyDashboard() {
         alert(
           "Announcement created successfully!"
         );
+
+        setAnnouncements((current) => [
+          data,
+          ...current,
+        ]);
 
         setAnnouncementTitle("");
         setAnnouncementMessage("");
@@ -240,7 +308,9 @@ function FacultyDashboard() {
     }
   };
 
-  // Logout
+  // =========================
+  // LOGOUT
+  // =========================
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -251,7 +321,7 @@ function FacultyDashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
 
-      {/* Sidebar */}
+      {/* SIDEBAR */}
 
       <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-white/10 bg-slate-900 md:block">
 
@@ -262,7 +332,6 @@ function FacultyDashboard() {
           </div>
 
           <div>
-
             <h1 className="font-bold">
               Smart Campus
             </h1>
@@ -270,7 +339,6 @@ function FacultyDashboard() {
             <p className="text-xs text-slate-500">
               Faculty Portal
             </p>
-
           </div>
 
         </div>
@@ -333,11 +401,9 @@ function FacultyDashboard() {
 
       </aside>
 
-      {/* Main */}
+      {/* MAIN */}
 
       <main className="md:ml-64">
-
-        {/* Header */}
 
         <header className="border-b border-white/10 bg-slate-950/80 px-6 py-5">
 
@@ -353,7 +419,7 @@ function FacultyDashboard() {
 
         <div className="space-y-8 p-6">
 
-          {/* Statistics */}
+          {/* STATISTICS */}
 
           <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 
@@ -380,7 +446,6 @@ function FacultyDashboard() {
               </p>
 
               <h2 className="mt-1 text-3xl font-bold">
-
                 {
                   complaints.filter(
                     (complaint) =>
@@ -388,7 +453,6 @@ function FacultyDashboard() {
                       "Pending"
                   ).length
                 }
-
               </h2>
 
             </div>
@@ -402,7 +466,6 @@ function FacultyDashboard() {
               </p>
 
               <h2 className="mt-1 text-3xl font-bold">
-
                 {
                   complaints.filter(
                     (complaint) =>
@@ -410,7 +473,6 @@ function FacultyDashboard() {
                       "Resolved"
                   ).length
                 }
-
               </h2>
 
             </div>
@@ -431,7 +493,7 @@ function FacultyDashboard() {
 
           </section>
 
-          {/* Complaints */}
+          {/* COMPLAINTS */}
 
           <section id="complaints">
 
@@ -526,21 +588,23 @@ function FacultyDashboard() {
 
           </section>
 
-          {/* Events */}
+          {/* EVENTS */}
 
           <section id="events">
 
             <div className="mb-5">
 
               <h2 className="text-xl font-bold">
-                Create Event
+                Manage Events
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Add a new campus event for students
+                Create and view campus events
               </p>
 
             </div>
+
+            {/* CREATE EVENT */}
 
             <form
               onSubmit={handleEventSubmit}
@@ -620,23 +684,79 @@ function FacultyDashboard() {
 
             </form>
 
+            {/* EXISTING EVENTS */}
+
+            <div className="mt-6 space-y-4">
+
+              {events.length === 0 ? (
+
+                <p className="text-sm text-slate-500">
+                  No events available.
+                </p>
+
+              ) : (
+
+                events.map((event) => (
+
+                  <div
+                    key={event._id}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
+                  >
+
+                    <h3 className="font-semibold">
+                      {event.title}
+                    </h3>
+
+                    <div className="mt-2 space-y-1 text-sm text-slate-400">
+
+                      <p>
+                        Date:{" "}
+                        {new Date(
+                          event.date
+                        ).toLocaleDateString()}
+                      </p>
+
+                      <p>
+                        Time: {event.time}
+                      </p>
+
+                      <p>
+                        Location: {event.location}
+                      </p>
+
+                    </div>
+
+                    <p className="mt-3 text-sm text-slate-500">
+                      {event.description}
+                    </p>
+
+                  </div>
+
+                ))
+
+              )}
+
+            </div>
+
           </section>
 
-          {/* Announcements */}
+          {/* ANNOUNCEMENTS */}
 
           <section id="announcements">
 
             <div className="mb-5">
 
               <h2 className="text-xl font-bold">
-                Create Announcement
+                Manage Announcements
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Share important information with students
+                Create and view campus announcements
               </p>
 
             </div>
+
+            {/* CREATE ANNOUNCEMENT */}
 
             <form
               onSubmit={handleAnnouncementSubmit}
@@ -729,9 +849,60 @@ function FacultyDashboard() {
 
             </form>
 
+            {/* EXISTING ANNOUNCEMENTS */}
+
+            <div className="mt-6 space-y-4">
+
+              {announcements.length === 0 ? (
+
+                <p className="text-sm text-slate-500">
+                  No announcements available.
+                </p>
+
+              ) : (
+
+                announcements.map(
+                  (announcement) => (
+
+                    <div
+                      key={announcement._id}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
+                    >
+
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+
+                        <h3 className="font-semibold">
+                          {announcement.title}
+                        </h3>
+
+                        <span className="rounded-full bg-violet-500/10 px-3 py-1 text-xs text-violet-400">
+                          {announcement.category}
+                        </span>
+
+                      </div>
+
+                      <p className="mt-3 text-sm text-slate-400">
+                        {announcement.message}
+                      </p>
+
+                      <p className="mt-2 text-xs text-slate-600">
+                        {new Date(
+                          announcement.date
+                        ).toLocaleDateString()}
+                      </p>
+
+                    </div>
+
+                  )
+                )
+
+              )}
+
+            </div>
+
           </section>
 
-          {/* Lost & Found */}
+          {/* LOST & FOUND */}
 
           <section id="lost-found">
 

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import {
   GraduationCap,
-  Mail,
+  Hash,
   Lock,
   ArrowLeft,
 } from "lucide-react";
@@ -14,49 +14,107 @@ function Login() {
 
     const form = e.target;
 
+    const registrationNumber =
+      form.registrationNumber.value
+        .trim()
+        .toUpperCase();
+
+    const password =
+      form.password.value;
+
+    // Validate fields
+    if (
+      !registrationNumber ||
+      !password
+    ) {
+      alert(
+        "Registration number and password are required"
+      );
+
+      return;
+    }
+
     const loginData = {
-      email: form.email.value,
-      password: form.password.value,
+      registrationNumber,
+      password,
     };
 
-    console.log("Login data:", loginData);
+    console.log(
+      "Login registration number:",
+      registrationNumber
+    );
 
     try {
       const response = await fetch(
         "https://obscure-space-enigma-q76pp7r69649f9qw4-5000.app.github.dev/api/auth/login",
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify(loginData),
         }
       );
 
       const data = await response.json();
 
-      console.log("Login response:", data);
+      console.log(
+        "Login response:",
+        data
+      );
 
       if (!response.ok) {
-        alert(data.message);
+        alert(
+          data.message ||
+            "Invalid registration number or password"
+        );
+
         return;
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // ==========================================
+      // SAVE LOGIN INFORMATION
+      // ==========================================
 
-      alert("Login successful!");
+      localStorage.setItem(
+        "token",
+        data.token
+      );
 
-      // Redirect based on user role
-      if (data.user.role === "faculty") {
-        navigate("/faculty-dashboard");
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data.user)
+      );
+
+      alert(
+        "Login successful!"
+      );
+
+      // ==========================================
+      // REDIRECT BASED ON ROLE
+      // ==========================================
+
+      if (
+        data.user.role === "faculty"
+      ) {
+        navigate(
+          "/faculty-dashboard"
+        );
       } else {
         navigate("/dashboard");
       }
 
     } catch (error) {
-      console.error("Login error:", error);
-      alert("Unable to connect to server");
+      console.error(
+        "Login error:",
+        error
+      );
+
+      alert(
+        "Unable to connect to server"
+      );
     }
   };
 
@@ -65,6 +123,8 @@ function Login() {
 
       <div className="mx-auto max-w-md">
 
+        {/* Back to Home */}
+
         <Link
           to="/"
           className="mb-10 flex items-center gap-2 text-sm text-slate-400 hover:text-white"
@@ -72,6 +132,8 @@ function Login() {
           <ArrowLeft size={18} />
           Back to Home
         </Link>
+
+        {/* Header */}
 
         <div className="mb-8 text-center">
 
@@ -89,6 +151,8 @@ function Login() {
 
         </div>
 
+        {/* Login Card */}
+
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8">
 
           <form
@@ -96,34 +160,39 @@ function Login() {
             className="space-y-5"
           >
 
-            {/* Email */}
+            {/* ==============================
+                REGISTRATION NUMBER
+            ============================== */}
 
             <div>
 
               <label className="mb-2 block text-sm text-slate-300">
-                Email
+                Registration Number
               </label>
 
               <div className="relative">
 
-                <Mail
+                <Hash
                   size={19}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
                 />
 
                 <input
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
+                  name="registrationNumber"
+                  type="text"
+                  placeholder="Enter registration number"
                   required
-                  className="w-full rounded-xl border border-white/10 bg-slate-900 px-11 py-3 outline-none focus:border-violet-500"
+                  autoComplete="username"
+                  className="w-full rounded-xl border border-white/10 bg-slate-900 px-11 py-3 uppercase outline-none focus:border-violet-500"
                 />
 
               </div>
 
             </div>
 
-            {/* Password */}
+            {/* ==============================
+                PASSWORD
+            ============================== */}
 
             <div>
 
@@ -143,6 +212,7 @@ function Login() {
                   type="password"
                   placeholder="Enter your password"
                   required
+                  autoComplete="current-password"
                   className="w-full rounded-xl border border-white/10 bg-slate-900 px-11 py-3 outline-none focus:border-violet-500"
                 />
 
@@ -150,7 +220,9 @@ function Login() {
 
             </div>
 
-            {/* Login Button */}
+            {/* ==============================
+                LOGIN BUTTON
+            ============================== */}
 
             <button
               type="submit"
@@ -160,6 +232,8 @@ function Login() {
             </button>
 
           </form>
+
+          {/* Register Link */}
 
           <p className="mt-6 text-center text-sm text-slate-400">
 

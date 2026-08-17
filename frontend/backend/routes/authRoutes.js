@@ -5,105 +5,281 @@ const User = require("../models/User");
 
 const router = express.Router();
 
+// ==========================================
 // REGISTER
+// ==========================================
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    let {
+      name,
+      email,
+      registrationNumber,
+      password,
+      role,
+    } = req.body;
 
-    if (!name || !email || !password) {
+    // Clean input
+    name = name?.trim();
+    email = email?.trim().toLowerCase();
+    registrationNumber =
+      registrationNumber
+        ?.trim()
+        .toUpperCase();
+
+    role = role?.trim().toLowerCase();
+
+    // ==========================================
+    // REQUIRED FIELDS
+    // ==========================================
+
+    if (
+      !name ||
+      !email ||
+      !registrationNumber ||
+      !password
+    ) {
       return res.status(400).json({
-        message: "Please fill all required fields",
+        message:
+          "Please fill all required fields",
       });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    // ==========================================
+    // ROLE
+    // ==========================================
 
-    const allowedRoles = ["student", "faculty", "admin"];
+    role = role || "student";
 
-    const userRole = role || "student";
+    const allowedRoles = [
+      "student",
+      "faculty",
+    ];
 
-    if (!allowedRoles.includes(userRole)) {
+    if (!allowedRoles.includes(role)) {
       return res.status(400).json({
-        message: "Invalid role",
+        message:
+          "Only Student and Faculty accounts are allowed",
       });
     }
 
-    const existingUser = await User.findOne({
-      email: cleanEmail,
-    });
+    // ==========================================
+    // PASSWORD
+    // ==========================================
 
-    if (existingUser) {
+    if (password.length < 6) {
       return res.status(400).json({
-        message: "User already exists",
+        message:
+          "Password must be at least 6 characters long",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // ==========================================
+    // CHECK EMAIL
+    // ==========================================
+
+    const existingEmail =
+      await User.findOne({
+        email,
+      });
+
+    if (existingEmail) {
+      return res.status(400).json({
+        message:
+          "An account with this email already exists",
+      });
+    }
+
+    // ==========================================
+    // CHECK REGISTRATION NUMBER
+    // ==========================================
+
+    const existingRegistration =
+      await User.findOne({
+        registrationNumber,
+      });
+
+    if (existingRegistration) {
+      return res.status(400).json({
+        message:
+          "This registration number is already registered",
+      });
+    }
+
+    // ==========================================
+    // HASH PASSWORD
+    // ==========================================
+
+    const hashedPassword =
+      await bcrypt.hash(
+        password,
+        10
+      );
+
+    // ==========================================
+    // CREATE USER
+    // ==========================================
 
     const user = await User.create({
-      name: name.trim(),
-      email: cleanEmail,
+      name,
+      email,
+      registrationNumber,
       password: hashedPassword,
-      role: userRole,
+      role,
     });
 
-    res.status(201).json({
-      message: "Account created successfully",
+    console.log(
+      `User registered: ${user.registrationNumber} (${user.role})`
+    );
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
+    return res.status(201).json({
+      message:
+        "Account created successfully",
+
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
+        registrationNumber:
+          user.registrationNumber,
         role: user.role,
       },
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error(
+      "Registration error:",
+      error
+    );
 
-    res.status(500).json({
+    // Duplicate key protection
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message:
+          "Email or registration number already exists",
+      });
+    }
+
+    return res.status(500).json({
       message: "Server error",
     });
   }
 });
 
-// LOGIN
+// ==========================================
+// LOGIN USING REGISTRATION NUMBER
+// ==========================================
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        message: "Email and password are required",
-      });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-
-    const user = await User.findOne({
-      email: cleanEmail,
-    });
-
-    console.log("Login email:", cleanEmail);
-    console.log("User found:", user ? "YES" : "NO");
-
-    if (!user) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
-    }
-
-    const passwordMatch = await bcrypt.compare(
+    let {
+      registrationNumber,
       password,
-      user.password
+    } = req.body;
+
+    // Clean registration number
+    registrationNumber =
+      registrationNumber
+        ?.trim()
+        .toUpperCase();
+
+    // ==========================================
+    // VALIDATE INPUT
+    // ==========================================
+
+    if (
+      !registrationNumber ||
+      !password
+    ) {
+      return res.status(400).json({
+        message:
+          "Registration number and password are required",
+      });
+    }
+
+    console.log(
+      `Login attempt: ${registrationNumber}`
     );
 
-    console.log("Password match:", passwordMatch);
-    console.log("User role:", user.role);
+    // ==========================================
+    // FIND USER BY REGISTRATION NUMBER
+    // ==========================================
+
+    const user =
+      await User.findOne({
+        registrationNumber,
+      });
+
+    if (!user) {
+      console.log(
+        "User found: NO"
+      );
+
+      return res.status(401).json({
+        message:
+          "Invalid registration number or password",
+      });
+    }
+
+    console.log(
+      `User found: ${user.registrationNumber} (${user.role})`
+    );
+
+    // ==========================================
+    // ALLOWED ROLES
+    // ==========================================
+
+    if (
+      user.role !== "student" &&
+      user.role !== "faculty"
+    ) {
+      return res.status(403).json({
+        message:
+          "This account type is not supported",
+      });
+    }
+
+    // ==========================================
+    // CHECK PASSWORD
+    // ==========================================
+
+    const passwordMatch =
+      await bcrypt.compare(
+        password,
+        user.password
+      );
+
+    console.log(
+      "Password match:",
+      passwordMatch
+    );
 
     if (!passwordMatch) {
       return res.status(401).json({
-        message: "Invalid email or password",
+        message:
+          "Invalid registration number or password",
       });
     }
+
+    // ==========================================
+    // JWT SECRET
+    // ==========================================
+
+    if (!process.env.JWT_SECRET) {
+      console.error(
+        "JWT_SECRET is missing"
+      );
+
+      return res.status(500).json({
+        message:
+          "Server configuration error",
+      });
+    }
+
+    // ==========================================
+    // CREATE TOKEN
+    // ==========================================
 
     const token = jwt.sign(
       {
@@ -116,20 +292,36 @@ router.post("/login", async (req, res) => {
       }
     );
 
-    res.json({
-      message: "Login successful",
+    console.log(
+      `Login successful: ${user.registrationNumber} (${user.role})`
+    );
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
+    return res.json({
+      message:
+        "Login successful",
+
       token,
+
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
+        registrationNumber:
+          user.registrationNumber,
         role: user.role,
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error(
+      "Login error:",
+      error
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error",
     });
   }

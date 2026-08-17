@@ -4,33 +4,56 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import StudentDashboard from "./pages/StudentDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
 import FacultyDashboard from "./pages/FacultyDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
 
-        <Route path="/login" element={<Login />} />
+        {/* Home */}
+        <Route
+          path="/"
+          element={<Home />}
+        />
 
-        <Route path="/register" element={<Register />} />
+        {/* Login */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
+        {/* Register */}
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+
+        {/* Student Dashboard */}
         <Route
           path="/dashboard"
-          element={<StudentDashboard />}
+          element={
+            <ProtectedRoute
+              allowedRoles={["student"]}
+            >
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
         />
 
+        {/* Faculty Dashboard */}
         <Route
           path="/faculty-dashboard"
-          element={<FacultyDashboard />}
+          element={
+            <ProtectedRoute
+              allowedRoles={["faculty"]}
+            >
+              <FacultyDashboard />
+            </ProtectedRoute>
+          }
         />
 
-        <Route
-          path="/admin-dashboard"
-          element={<AdminDashboard />}
-        />
       </Routes>
     </BrowserRouter>
   );
